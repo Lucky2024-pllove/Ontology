@@ -1,0 +1,733 @@
+{
+  "domain": {
+    "name": "合同管理系统",
+    "nameEn": "Contract Management System",
+    "description": "业务合同全生命周期管理：创建、审批、执行、收款与开票",
+    "version": "1.0"
+  },
+  "metadata": {
+    "generatedAt": "2026-03-23T12:00:00Z",
+    "source": "示例-合同管理领域",
+    "author": "ontology-middleware"
+  },
+  "statistics": {
+    "entityCount": 6,
+    "behaviorCount": 8,
+    "ruleCount": 6,
+    "subjectCount": 1,
+    "eventCount": 1,
+    "compensationCount": 1,
+    "processCount": 3
+  },
+  "subjects": [
+    {
+      "id": "Subject-001",
+      "name": "销售承办人",
+      "type": "role",
+      "description": "负责合同创建、维护与业务侧作废申请",
+      "boundEntityId": null,
+      "performsBehaviorIds": ["Behavior-001", "Behavior-002", "Behavior-003"],
+      "participatesInProcessIds": ["Process-001", "Process-002", "Process-003"],
+      "metadata": {}
+    }
+  ],
+  "events": [
+    {
+      "id": "Event-001",
+      "name": "合同已创建",
+      "description": "合同持久化成功后的领域事件，供后续行为/规则消费",
+      "publishedByBehaviorId": "Behavior-001",
+      "consumedByBehaviorIds": ["Behavior-002", "Behavior-007"],
+      "consumedByRuleIds": ["Rule-001"],
+      "relatedEntityIds": ["Entity-001"],
+      "payload": { "summary": "合同ID, 客户ID, 金额" },
+      "metadata": {}
+    }
+  ],
+  "compensations": [
+    {
+      "id": "Compensation-001",
+      "name": "收款子流程中开票失败时的回退",
+      "description": "对收款流程中已发生步骤的冲销/逆操作（业务约定顺序）",
+      "trigger": "Process-002 中开票或应收步骤失败，或需人工冲销时",
+      "relatedProcessId": "Process-002",
+      "fromStepId": "Step-102",
+      "compensatingBehaviorIds": ["Behavior-007", "Behavior-006"],
+      "executionOrder": "reverse",
+      "metadata": {}
+    }
+  ],
+  "entities": [
+    {
+      "id": "Entity-001",
+      "name": "合同",
+      "nameEn": "Contract",
+      "type": "core",
+      "parentId": null,
+      "description": "业务合同核心实体，记录编号、金额、状态及关联客户与条款",
+      "properties": [
+        {
+          "name": "合同编号",
+          "dataType": "String",
+          "constraints": { "required": true, "unique": true, "pattern": "^CT[0-9]{10}$" },
+          "description": "合同唯一编号"
+        },
+        {
+          "name": "金额",
+          "dataType": "Decimal",
+          "constraints": { "required": true, "min": 0 },
+          "description": "合同总金额（含税）"
+        },
+        {
+          "name": "状态",
+          "dataType": "String",
+          "constraints": {
+            "required": true,
+            "enum": ["草稿", "待审批", "已生效", "已作废", "已完结"]
+          },
+          "description": "合同生命周期状态"
+        },
+        {
+          "name": "生效日期",
+          "dataType": "Date",
+          "constraints": { "required": false },
+          "description": "合同生效日"
+        }
+      ],
+      "relations": [
+        {
+          "targetId": "Entity-002",
+          "type": "N:1",
+          "relationType": "association",
+          "description": "合同归属客户"
+        },
+        {
+          "targetId": "Entity-003",
+          "type": "1:N",
+          "relationType": "composition",
+          "description": "合同包含付款条款"
+        },
+        {
+          "targetId": "Entity-004",
+          "type": "1:N",
+          "relationType": "association",
+          "description": "合同关联开票记录"
+        },
+        {
+          "targetId": "Entity-005",
+          "type": "N:1",
+          "relationType": "association",
+          "description": "承办部门"
+        },
+        {
+          "targetId": "Entity-006",
+          "type": "N:1",
+          "relationType": "association",
+          "description": "承办人"
+        }
+      ],
+      "metadata": {}
+    },
+    {
+      "id": "Entity-002",
+      "name": "客户",
+      "nameEn": "Customer",
+      "type": "core",
+      "parentId": null,
+      "description": "签约客户信息",
+      "properties": [
+        {
+          "name": "客户ID",
+          "dataType": "String",
+          "constraints": { "required": true, "unique": true },
+          "description": "客户主键"
+        },
+        {
+          "name": "客户名称",
+          "dataType": "String",
+          "constraints": { "required": true },
+          "description": "客户全称"
+        },
+        {
+          "name": "客户状态",
+          "dataType": "String",
+          "constraints": { "required": true, "enum": ["正常", "冻结", "注销"] },
+          "description": "客户可用性"
+        }
+      ],
+      "relations": [],
+      "metadata": {}
+    },
+    {
+      "id": "Entity-003",
+      "name": "付款条款",
+      "nameEn": "PaymentTerm",
+      "type": "core",
+      "parentId": null,
+      "description": "分期付款比例与计划日期",
+      "properties": [
+        {
+          "name": "条款ID",
+          "dataType": "String",
+          "constraints": { "required": true, "unique": true },
+          "description": "条款内唯一标识"
+        },
+        {
+          "name": "付款比例",
+          "dataType": "Decimal",
+          "constraints": { "required": true, "min": 0, "max": 100 },
+          "description": "占合同总额百分比"
+        },
+        {
+          "name": "计划付款日",
+          "dataType": "Date",
+          "constraints": { "required": false },
+          "description": "计划收款日期"
+        },
+        {
+          "name": "是否已收款",
+          "dataType": "Boolean",
+          "constraints": { "required": true },
+          "description": "该期是否已确认收款"
+        }
+      ],
+      "relations": [
+        {
+          "targetId": "Entity-001",
+          "type": "N:1",
+          "relationType": "association",
+          "description": "所属合同"
+        }
+      ],
+      "metadata": {}
+    },
+    {
+      "id": "Entity-004",
+      "name": "开票记录",
+      "nameEn": "InvoiceRecord",
+      "type": "core",
+      "parentId": null,
+      "description": "发票开具与核销信息",
+      "properties": [
+        {
+          "name": "发票ID",
+          "dataType": "String",
+          "constraints": { "required": true, "unique": true },
+          "description": "发票记录主键"
+        },
+        {
+          "name": "开票金额",
+          "dataType": "Decimal",
+          "constraints": { "required": true, "min": 0 },
+          "description": "本次开票金额"
+        },
+        {
+          "name": "开票状态",
+          "dataType": "String",
+          "constraints": { "required": true, "enum": ["待开", "已开", "已红冲"] },
+          "description": "发票状态"
+        }
+      ],
+      "relations": [
+        {
+          "targetId": "Entity-001",
+          "type": "N:1",
+          "relationType": "association",
+          "description": "对应合同"
+        }
+      ],
+      "metadata": {}
+    },
+    {
+      "id": "Entity-005",
+      "name": "部门",
+      "nameEn": "Department",
+      "type": "reference",
+      "parentId": null,
+      "description": "组织架构中的部门（主数据引用）",
+      "properties": [
+        {
+          "name": "部门编码",
+          "dataType": "String",
+          "constraints": { "required": true },
+          "description": "部门编码"
+        },
+        {
+          "name": "部门名称",
+          "dataType": "String",
+          "constraints": { "required": true },
+          "description": "部门名称"
+        }
+      ],
+      "relations": [],
+      "metadata": { "sourceSystem": "HR" }
+    },
+    {
+      "id": "Entity-006",
+      "name": "人员",
+      "nameEn": "Person",
+      "type": "reference",
+      "parentId": null,
+      "description": "员工/用户（主数据引用）",
+      "properties": [
+        {
+          "name": "工号",
+          "dataType": "String",
+          "constraints": { "required": true },
+          "description": "员工工号"
+        },
+        {
+          "name": "姓名",
+          "dataType": "String",
+          "constraints": { "required": true },
+          "description": "姓名"
+        }
+      ],
+      "relations": [
+        {
+          "targetId": "Entity-005",
+          "type": "N:1",
+          "relationType": "association",
+          "description": "所属部门"
+        }
+      ],
+      "metadata": { "sourceSystem": "HR" }
+    }
+  ],
+  "behaviors": [
+    {
+      "id": "Behavior-001",
+      "name": "创建合同",
+      "entityId": "Entity-001",
+      "description": "新建合同草稿并生成合同编号",
+      "signature": {
+        "inputs": [
+          {
+            "name": "客户ID",
+            "dataType": "String",
+            "required": true,
+            "constraints": {},
+            "description": "关联客户"
+          },
+          {
+            "name": "金额",
+            "dataType": "Decimal",
+            "required": true,
+            "constraints": { "min": 0 },
+            "description": "合同总金额"
+          },
+          {
+            "name": "付款条款列表",
+            "dataType": "Array",
+            "required": true,
+            "constraints": { "minItems": 1 },
+            "description": "至少一条付款条款"
+          }
+        ],
+        "outputs": [
+          { "name": "合同对象", "dataType": "Object", "description": "含合同编号与草稿状态" }
+        ],
+        "exceptions": [
+          { "type": "CustomerNotFoundException", "condition": "客户不存在或已冻结", "message": "客户不可用" },
+          { "type": "InvalidAmountException", "condition": "金额<=0", "message": "金额必须大于0" }
+        ]
+      },
+      "preconditions": ["当前用户具有合同创建权限", "客户状态=正常"],
+      "postconditions": ["合同状态=草稿", "生成唯一合同编号"],
+      "invokes": ["Behavior-007"],
+      "triggeredBy": ["Process-001"],
+      "validates": ["Rule-001", "Rule-002"],
+      "publishesEventIds": ["Event-001"],
+      "subscribesToEventIds": [],
+      "metadata": { "transactional": true }
+    },
+    {
+      "id": "Behavior-002",
+      "name": "更新合同",
+      "entityId": "Entity-001",
+      "description": "在草稿或待审批状态下修改合同内容",
+      "signature": {
+        "inputs": [
+          { "name": "合同ID", "dataType": "String", "required": true, "constraints": {}, "description": "合同主键" },
+          { "name": "变更字段", "dataType": "Object", "required": true, "constraints": {}, "description": "可更新字段集合" }
+        ],
+        "outputs": [{ "name": "更新后合同", "dataType": "Object", "description": "最新合同快照" }],
+        "exceptions": [
+          { "type": "IllegalStateException", "condition": "状态非草稿/待审批", "message": "当前状态不允许修改" }
+        ]
+      },
+      "preconditions": ["合同状态 in (草稿, 待审批)"],
+      "postconditions": ["记录变更日志"],
+      "invokes": [],
+      "triggeredBy": ["Process-001"],
+      "validates": ["Rule-001", "Rule-002"],
+      "publishesEventIds": [],
+      "subscribesToEventIds": ["Event-001"],
+      "metadata": {}
+    },
+    {
+      "id": "Behavior-003",
+      "name": "作废合同",
+      "entityId": "Entity-001",
+      "description": "将合同标记为已作废",
+      "signature": {
+        "inputs": [
+          { "name": "合同ID", "dataType": "String", "required": true, "constraints": {}, "description": "合同主键" },
+          { "name": "作废原因", "dataType": "String", "required": true, "constraints": {}, "description": "作废说明" }
+        ],
+        "outputs": [{ "name": "结果", "dataType": "Boolean", "description": "是否成功" }],
+        "exceptions": [
+          { "type": "IllegalStateException", "condition": "已开票且未红冲", "message": "需先处理发票" }
+        ]
+      },
+      "preconditions": ["合同状态 in (草稿, 待审批, 已生效)"],
+      "postconditions": ["合同状态=已作废"],
+      "invokes": [],
+      "triggeredBy": ["Process-003"],
+      "validates": ["Rule-004"],
+      "metadata": {}
+    },
+    {
+      "id": "Behavior-004",
+      "name": "提交审批",
+      "entityId": "Entity-001",
+      "description": "将合同提交审批流",
+      "signature": {
+        "inputs": [{ "name": "合同ID", "dataType": "String", "required": true, "constraints": {}, "description": "合同主键" }],
+        "outputs": [{ "name": "审批实例ID", "dataType": "String", "description": "外部审批单号" }],
+        "exceptions": []
+      },
+      "preconditions": ["合同状态=草稿", "必填项完整"],
+      "postconditions": ["合同状态=待审批"],
+      "invokes": [],
+      "triggeredBy": ["Process-001"],
+      "validates": ["Rule-001", "Rule-002", "Rule-003"],
+      "metadata": {}
+    },
+    {
+      "id": "Behavior-005",
+      "name": "确认收款",
+      "entityId": "Entity-003",
+      "description": "确认某付款条款对应款项已到账",
+      "signature": {
+        "inputs": [
+          { "name": "条款ID", "dataType": "String", "required": true, "constraints": {}, "description": "付款条款ID" },
+          { "name": "实际到账日", "dataType": "Date", "required": true, "constraints": {}, "description": "收款日期" }
+        ],
+        "outputs": [{ "name": "结果", "dataType": "Boolean", "description": "是否成功" }],
+        "exceptions": []
+      },
+      "preconditions": ["合同状态=已生效", "对应条款未收款"],
+      "postconditions": ["条款.是否已收款=true"],
+      "invokes": [],
+      "triggeredBy": ["Process-002"],
+      "validates": [],
+      "metadata": {}
+    },
+    {
+      "id": "Behavior-006",
+      "name": "开具发票",
+      "entityId": "Entity-004",
+      "description": "为合同创建开票记录",
+      "signature": {
+        "inputs": [
+          { "name": "合同ID", "dataType": "String", "required": true, "constraints": {}, "description": "合同主键" },
+          { "name": "开票金额", "dataType": "Decimal", "required": true, "constraints": { "min": 0 }, "description": "本次开票额" }
+        ],
+        "outputs": [{ "name": "发票ID", "dataType": "String", "description": "新生成发票记录ID" }],
+        "exceptions": [
+          { "type": "OverInvoiceException", "condition": "累计开票>合同金额", "message": "超额开票" }
+        ]
+      },
+      "preconditions": ["合同状态=已生效"],
+      "postconditions": ["新增开票记录，状态=已开"],
+      "invokes": [],
+      "triggeredBy": ["Process-002"],
+      "validates": ["Rule-005"],
+      "metadata": {}
+    },
+    {
+      "id": "Behavior-007",
+      "name": "校验客户",
+      "entityId": "Entity-002",
+      "description": "校验客户存在且状态正常",
+      "signature": {
+        "inputs": [{ "name": "客户ID", "dataType": "String", "required": true, "constraints": {}, "description": "客户ID" }],
+        "outputs": [{ "name": "客户对象", "dataType": "Object", "description": "客户详情" }],
+        "exceptions": [{ "type": "CustomerNotFoundException", "condition": "无记录或状态非正常", "message": "客户不可用" }]
+      },
+      "preconditions": [],
+      "postconditions": [],
+      "invokes": [],
+      "triggeredBy": ["Behavior-001"],
+      "validates": [],
+      "publishesEventIds": [],
+      "subscribesToEventIds": ["Event-001"],
+      "metadata": {}
+    },
+    {
+      "id": "Behavior-008",
+      "name": "审批通过回调",
+      "entityId": "Entity-001",
+      "description": "外部审批通过后更新合同为已生效",
+      "signature": {
+        "inputs": [
+          { "name": "合同ID", "dataType": "String", "required": true, "constraints": {}, "description": "合同主键" },
+          { "name": "审批结果", "dataType": "String", "required": true, "constraints": { "enum": ["通过", "驳回"] }, "description": "审批结论" }
+        ],
+        "outputs": [{ "name": "结果", "dataType": "Boolean", "description": "是否更新成功" }],
+        "exceptions": []
+      },
+      "preconditions": ["合同状态=待审批"],
+      "postconditions": ["若通过则状态=已生效并写入生效日期；若驳回则状态=草稿"],
+      "invokes": [],
+      "triggeredBy": [],
+      "validates": ["Rule-004"],
+      "metadata": { "async": true }
+    }
+  ],
+  "rules": [
+    {
+      "id": "Rule-001",
+      "name": "合同金额非空且大于零",
+      "type": "validation",
+      "description": "提交或保存时金额必须有效",
+      "trigger": { "event": "合同保存或提交", "target": "Entity-001", "timing": "持久化前" },
+      "condition": { "expression": "amount != null && amount > 0", "description": "金额非空且大于0" },
+      "actions": {
+        "onTrue": ["继续保存"],
+        "onFalse": ["拒绝保存", "提示金额无效"]
+      },
+      "priority": 900,
+      "scope": "全局",
+      "dependsOn": [],
+      "triggers": [],
+      "metadata": {}
+    },
+    {
+      "id": "Rule-002",
+      "name": "付款条款比例之和为100%",
+      "type": "validation",
+      "description": "所有付款条款比例合计须为100%",
+      "trigger": { "event": "合同保存或提交", "target": "Entity-001", "timing": "持久化前" },
+      "condition": {
+        "expression": "SUM(paymentTerms.ratio) == 100",
+        "description": "分期比例合计100%"
+      },
+      "actions": {
+        "onTrue": ["继续"],
+        "onFalse": ["拒绝", "提示调整付款条款"]
+      },
+      "priority": 850,
+      "scope": "含付款条款的合同",
+      "dependsOn": [],
+      "triggers": [],
+      "metadata": {}
+    },
+    {
+      "id": "Rule-003",
+      "name": "大额合同必须审批",
+      "type": "business",
+      "description": "金额达到阈值须进入审批流",
+      "trigger": { "event": "提交审批", "target": "Entity-001", "timing": "提交时" },
+      "condition": { "expression": "amount >= threshold", "description": "金额>=阈值（如10万）" },
+      "actions": {
+        "onTrue": ["创建审批任务", "状态=待审批"],
+        "onFalse": ["可走快速通道或仍需审批（策略可配）"]
+      },
+      "priority": 700,
+      "scope": "提交审批",
+      "dependsOn": ["Rule-001", "Rule-002"],
+      "triggers": [],
+      "metadata": { "threshold": 100000 }
+    },
+    {
+      "id": "Rule-004",
+      "name": "合同状态转换合法",
+      "type": "state",
+      "description": "仅允许预定义状态迁移",
+      "trigger": { "event": "状态变更", "target": "Entity-001", "timing": "更新前" },
+      "condition": {
+        "expression": "(from,to) in ALLOWED_TRANSITIONS",
+        "description": "迁移在白名单内"
+      },
+      "actions": {
+        "onTrue": ["允许更新"],
+        "onFalse": ["拒绝非法迁移"]
+      },
+      "priority": 800,
+      "scope": "全局",
+      "dependsOn": [],
+      "triggers": [],
+      "metadata": {
+        "allowed": [
+          ["草稿", "待审批"],
+          ["草稿", "已作废"],
+          ["待审批", "已生效"],
+          ["待审批", "草稿"],
+          ["已生效", "已完结"],
+          ["已生效", "已作废"]
+        ]
+      }
+    },
+    {
+      "id": "Rule-005",
+      "name": "累计开票不超过合同金额",
+      "type": "validation",
+      "description": "开票累计校验",
+      "trigger": { "event": "开具发票", "target": "Entity-004", "timing": "开票前" },
+      "condition": {
+        "expression": "SUM(invoices.amount) + current <= contract.amount",
+        "description": "累计开票+本次<=合同金额"
+      },
+      "actions": {
+        "onTrue": ["允许开票"],
+        "onFalse": ["拒绝", "提示超额"]
+      },
+      "priority": 750,
+      "scope": "开票",
+      "dependsOn": [],
+      "triggers": [],
+      "metadata": {}
+    },
+    {
+      "id": "Rule-006",
+      "name": "作废前检查未结清发票",
+      "type": "business",
+      "description": "存在有效已开票时需先红冲或处理",
+      "trigger": { "event": "作废合同", "target": "Entity-001", "timing": "作废前" },
+      "condition": {
+        "expression": "!hasBlockingInvoices(contractId)",
+        "description": "无阻塞作废的发票状态"
+      },
+      "actions": {
+        "onTrue": ["允许作废"],
+        "onFalse": ["阻断并提示先处理发票"]
+      },
+      "priority": 720,
+      "scope": "作废",
+      "dependsOn": [],
+      "triggers": [],
+      "metadata": {}
+    }
+  ],
+  "processes": [
+    {
+      "id": "Process-001",
+      "name": "合同录入与提交",
+      "type": "business",
+      "description": "从创建草稿到提交审批",
+      "trigger": "用户发起新建合同",
+      "participants": ["销售人员", "合同系统"],
+      "steps": [
+        {
+          "id": "Step-001",
+          "name": "填写合同信息",
+          "type": "userTask",
+          "behaviorId": null,
+          "rules": [],
+          "participant": "销售人员",
+          "transitions": [{ "to": "Step-002", "condition": "信息填写完成", "type": "success" }]
+        },
+        {
+          "id": "Step-002",
+          "name": "创建合同草稿",
+          "type": "serviceTask",
+          "behaviorId": "Behavior-001",
+          "rules": ["Rule-001", "Rule-002"],
+          "participant": "合同系统",
+          "transitions": [
+            { "to": "Step-003", "condition": "创建成功", "type": "success" },
+            { "to": "Step-001", "condition": "校验失败", "type": "failure" }
+          ]
+        },
+        {
+          "id": "Step-003",
+          "name": "修改与补充",
+          "type": "userTask",
+          "behaviorId": "Behavior-002",
+          "rules": ["Rule-001", "Rule-002"],
+          "participant": "销售人员",
+          "transitions": [{ "to": "Step-004", "condition": "确认提交", "type": "success" }]
+        },
+        {
+          "id": "Step-004",
+          "name": "提交审批",
+          "type": "serviceTask",
+          "behaviorId": "Behavior-004",
+          "rules": ["Rule-003"],
+          "participant": "合同系统",
+          "transitions": [
+            { "to": "End", "condition": "已提交审批", "type": "success" },
+            { "to": "Step-003", "condition": "需修改", "type": "conditional" }
+          ]
+        }
+      ],
+      "metadata": {}
+    },
+    {
+      "id": "Process-002",
+      "name": "收款与开票",
+      "type": "business",
+      "description": "确认分期收款并开具发票",
+      "trigger": "合同已生效后",
+      "participants": ["财务人员", "合同系统"],
+      "steps": [
+        {
+          "id": "Step-101",
+          "name": "确认收款",
+          "type": "serviceTask",
+          "behaviorId": "Behavior-005",
+          "rules": [],
+          "participant": "财务人员",
+          "transitions": [{ "to": "Step-102", "condition": "收款登记成功", "type": "success" }]
+        },
+        {
+          "id": "Step-102",
+          "name": "开具发票",
+          "type": "serviceTask",
+          "behaviorId": "Behavior-006",
+          "rules": ["Rule-005"],
+          "participant": "合同系统",
+          "transitions": [
+            { "to": "End", "condition": "开票成功", "type": "success" },
+            { "to": "Step-101", "condition": "需调整收款", "type": "conditional" }
+          ]
+        }
+      ],
+      "metadata": {}
+    },
+    {
+      "id": "Process-003",
+      "name": "合同作废",
+      "type": "business",
+      "description": "业务作废合同",
+      "trigger": "用户申请作废",
+      "participants": ["承办人", "合同系统"],
+      "steps": [
+        {
+          "id": "Step-201",
+          "name": "作废申请",
+          "type": "userTask",
+          "behaviorId": null,
+          "rules": [],
+          "participant": "承办人",
+          "transitions": [{ "to": "Step-202", "condition": "提交", "type": "success" }]
+        },
+        {
+          "id": "Step-202",
+          "name": "执行作废",
+          "type": "serviceTask",
+          "behaviorId": "Behavior-003",
+          "rules": ["Rule-004", "Rule-006"],
+          "participant": "合同系统",
+          "transitions": [
+            { "to": "End", "condition": "作废成功", "type": "success" },
+            { "to": "Step-201", "condition": "阻断", "type": "failure" }
+          ]
+        }
+      ],
+      "metadata": {}
+    }
+  ]
+}
