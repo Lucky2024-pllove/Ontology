@@ -1,8 +1,7 @@
 <div align="center">
   <h1>Ontology</h1>
   <p>
-    <strong>Turn requirements and workflows into docs + structured data</strong><br>
-    From your requirements, processes, or notes, it produces <strong>readable domain documentation</strong> (<strong>Markdown</strong>) and <strong>machine-friendly payload</strong> (<strong>JSON</strong>, optional <strong>YAML</strong>). The skill <strong>supports Feishu (Lark) wiki as a target</strong>: with your app configured and the right permissions, you can use <a href="https://www.npmjs.com/package/@larksuite/cli">lark-cli</a> to <strong>write into the Feishu wiki / knowledge base</strong> and <strong>sync flowcharts in the document to Feishu whiteboards</strong>. Steps, scopes, and rules for Feishu are in <a href="./SKILL.md">SKILL.md</a> (mainly Chinese).
+    From requirement documents, business processes, and technical specifications, it builds a unified six-part domain ontology (entities, behaviors, rules, scenarios/processes, subjects, domain events, exceptions and compensation, etc.), and outputs Markdown plus machine-consumable JSON, with optional YAML and Feishu wiki/whiteboard delivery; structured data can be validated with the bundled validation script.
   </p>
 </div>
 
@@ -28,7 +27,10 @@
 <details open>
 <summary><b>Table of contents</b></summary>
 
+- [When to use (triggers)](#when-to-use-triggers)
 - [What it solves](#what-it-solves)
+- [Scope and validation (summary)](#scope-and-validation-summary)
+- [Resource index](#resource-index)
 - [Before / After](#before--after)
 - [One-liner usage](#one-liner-usage)
 - [Architecture](#architecture)
@@ -44,11 +46,52 @@
 
 </details>
 
+## When to use (triggers)
+
+Aligned with [Section 1 (Triggers) in `SKILL.md`](./SKILL.md) (Chinese), typical cases:
+
+- Extract a **domain ontology** from **requirements, business process, or technical notes**, and emit **machine-consumable ontology** (JSON first, optional YAML) for APIs / downstream systems
+- You need a single vocabulary for the **six types**: entities, behaviors, rules, processes (scenarios), subjects, domain events, and compensations, including **event-driven** extensions (e.g. publish/subscribe on behaviors)
+- You need **Markdown + JSON + (optional) YAML** for rules/flow/messaging bus integration
+- **Optional:** archive the model under a **Feishu wiki** space/parent node and render **Mermaid** on **whiteboards**
+
+If the agent cannot derive structure or completeness from scratch, follow the SOP and validation in `SKILL.md`.
+
 ## What it solves
 
-Domain modeling needs a single vocabulary for **entities, behaviors, rules, processes (scenarios), subjects, domain events, and compensations**, plus **traceable documentation** and **downstream-consumable data**. If your team uses Feishu, you also want the right **wiki space and parent node**, and Mermaid in docs rendered as **whiteboards**—but without a shared SOP, outputs drift, or you get un-auditable “I already saved it to Feishu” claims without a real CLI run.
+Domain modeling needs a single vocabulary for **entities, behaviors, rules, processes (scenarios), subjects, domain events, and compensations**, plus **traceable documentation** and **downstream-consumable data** (root fields and terms: `SKILL.md` and [references/machine-readable-format.md](./references/machine-readable-format.md)). If your team uses Feishu, you also want the right **wiki space and parent node**, and Mermaid in docs rendered as **whiteboards**—but without a shared SOP, outputs drift, or you get un-auditable “I already saved it to Feishu” claims without a real CLI run.
 
-**Ontology** encodes the workflow and root JSON fields in one [`SKILL.md`](./SKILL.md) (in Chinese). **Local delivery does not require Feishu.** Only when the user explicitly asks **and** provides parseable `space_id` / `parent_node_token` (etc.) should the agent run [`references/feishu-delivery.md`](./references/feishu-delivery.md) against **`lark-cli` for real** and return links or errors.
+**Ontology** encodes the workflow and root JSON fields in one [`SKILL.md`](./SKILL.md) (in Chinese). **By default** it only produces local `{basename}.md` / `{basename}.json` (and optional `.yaml`); **Feishu is not required.** Only when the user explicitly asks **and** provides parseable `space_id` / `parent_node_token` (etc.) should the agent run [`references/feishu-delivery.md`](./references/feishu-delivery.md) against **`lark-cli` for real** (step 14 in `SKILL.md`) and return links or errors.
+
+## Scope and validation (summary)
+
+See [Section 3 (Boundaries) in `SKILL.md`](./SKILL.md).
+
+**Expected outputs**
+
+- `{basename}.md`: overview, six-type sections, Mermaid, etc. (layout: [references/output-format.md](./references/output-format.md))
+- `{basename}.json`: root must include `domain`, `entities`, `behaviors`, `rules`, `subjects`, `events`, `compensations`, `processes` (**arrays may be empty**, **keys must exist**; checked by `scripts/validate.py`)
+- Optional `{basename}.yaml`: isomorphic to JSON
+
+**Validation:** full checklist in `SKILL.md`; run `python scripts/validate.py path/to/domain.json` for top-level keys. The **single detailed** spec for JSON schema, references, and consumption is [references/machine-readable-format.md](./references/machine-readable-format.md).
+
+**Stop / fallbacks:** unreadable or off-topic source → stop; partial delivery with “TBD” when input is thin; if only JSON or YAML is needed, **treat JSON as canonical**—see `SKILL.md` Section 3.
+
+## Resource index
+
+Same table as in [`SKILL.md`](./SKILL.md):
+
+| Topic | File |
+|------|------|
+| Object analysis + EDA; subjects / events / compensations | [references/eda-subject-compensation.md](references/eda-subject-compensation.md) |
+| Entity modeling | [references/ontology-methodology.md](references/ontology-methodology.md) |
+| Behavior modeling | [references/behavior-modeling.md](references/behavior-modeling.md) |
+| Rule modeling | [references/rule-modeling.md](references/rule-modeling.md) |
+| Process / scenario | [references/process-modeling.md](references/process-modeling.md) |
+| Human-readable layout & Mermaid | [references/output-format.md](references/output-format.md) |
+| JSON structure, consumption, integration (single source of detail) | [references/machine-readable-format.md](references/machine-readable-format.md) |
+| Document template | [assets/domain-model-template.md](assets/domain-model-template.md) |
+| Feishu wiki + Mermaid / whiteboard | [references/feishu-delivery.md](references/feishu-delivery.md) |
 
 ## Before / After
 
@@ -206,7 +249,8 @@ Success prints `OK`; otherwise you get missing fields or parse errors.
 
 | Path | Description |
 |------|-------------|
-| [`SKILL.md`](./SKILL.md) | Main skill: triggers, SOP 1–14, boundaries, index (Chinese) |
+| [`README.md`](./README.md) / [`README.en.md`](./README.en.md) | Onboarding and install; **behavior and spec follow [`SKILL.md`](./SKILL.md)** |
+| [`SKILL.md`](./SKILL.md) | Main skill: triggers, SOP 1–14, boundaries, index (Chinese—**source of truth**) |
 | [`references/`](./references/) | Methodology, human-readable format, machine-readable format, optional [Feishu delivery](./references/feishu-delivery.md) (Chinese) |
 | [`assets/domain-model-template.md`](./assets/domain-model-template.md) | Domain model document template |
 | [`scripts/validate.py`](./scripts/validate.py) | Validate top-level keys in `*.json` |

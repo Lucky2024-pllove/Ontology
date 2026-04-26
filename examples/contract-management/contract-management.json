@@ -8,7 +8,7 @@
   "metadata": {
     "generatedAt": "2026-03-23T12:00:00Z",
     "source": "示例-合同管理领域",
-    "author": "ontology-middleware"
+    "author": "Ontology"
   },
   "statistics": {
     "entityCount": 6,
@@ -385,6 +385,8 @@
       "invokes": [],
       "triggeredBy": ["Process-003"],
       "validates": ["Rule-004"],
+      "publishesEventIds": [],
+      "subscribesToEventIds": [],
       "metadata": {}
     },
     {
@@ -402,6 +404,8 @@
       "invokes": [],
       "triggeredBy": ["Process-001"],
       "validates": ["Rule-001", "Rule-002", "Rule-003"],
+      "publishesEventIds": [],
+      "subscribesToEventIds": [],
       "metadata": {}
     },
     {
@@ -422,6 +426,8 @@
       "invokes": [],
       "triggeredBy": ["Process-002"],
       "validates": [],
+      "publishesEventIds": [],
+      "subscribesToEventIds": [],
       "metadata": {}
     },
     {
@@ -444,6 +450,8 @@
       "invokes": [],
       "triggeredBy": ["Process-002"],
       "validates": ["Rule-005"],
+      "publishesEventIds": [],
+      "subscribesToEventIds": [],
       "metadata": {}
     },
     {
@@ -483,6 +491,8 @@
       "invokes": [],
       "triggeredBy": [],
       "validates": ["Rule-004"],
+      "publishesEventIds": [],
+      "subscribesToEventIds": [],
       "metadata": { "async": true }
     }
   ],

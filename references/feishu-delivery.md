@@ -123,7 +123,7 @@ npx -y @larksuite/whiteboard-cli@^0.2.10 -i diagram.mmd --to openapi --format js
 2. `wiki +node-create` → 得 `obj_token`。  
 3. 转换 `{basename}.md`：抽取 Mermaid → 画板块；补全 `title` 与章节结构。  
 4. `docs +update` 分段写入（优先 `append` / `block_insert_after`，避免误用 `overwrite` 清稿）。  
-5. 对复杂图按 §4.3 补画板。  
+5. 对复杂图按第 4.3 节补画板。  
 6. 将飞书文档 URL 回写给用户。
 
 ## 6. 子节点/列表（可选）

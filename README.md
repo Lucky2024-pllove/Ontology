@@ -1,8 +1,7 @@
 <div align="center">
   <h1>Ontology</h1>
   <p>
-    <strong>把业务需求与流程，整理成文档 + 结构化数据</strong><br>
-    根据你提供的需求、流程或说明，生成<strong>给人看的领域说明</strong>（<strong>Markdown</strong>）和<strong>给系统或接口用的数据</strong>（<strong>JSON</strong>，可选 <strong>YAML</strong>）。本技能<strong>支持飞书知识库</strong>：在配置好飞书应用与权限后，可用 <a href="https://www.npmjs.com/package/@larksuite/cli">lark-cli</a> 将内容写入<strong>飞书知识库</strong>，并将文档中的流程图同步到<strong>飞书画板</strong>。飞书侧的步骤、权限与约束见 <a href="./SKILL.md">SKILL.md</a>。
+    基于需求文档、业务流程与技术说明，构建领域本体的六类统一模型（对象、行为、规则、场景/流程、主体、领域事件、异常与补偿等），输出 Markdown + 可消费 JSON（可选 YAML 及飞书知识库/画板），并可通过脚本校验结构化数据。
   </p>
 </div>
 
@@ -206,7 +205,8 @@ python scripts/validate.py examples/contract-management/contract-management.json
 
 | 路径 | 说明 |
 |------|------|
-| [`SKILL.md`](./SKILL.md) | 主技能：触发条件、SOP 1～14、能力边界、资源索引 |
+| [`README.md`](./README.md) / [`README.en.md`](./README.en.md) | 仓库导览与安装说明；**功能定义、SOP 与能力边界以 [`SKILL.md`](./SKILL.md) 为准** |
+| [`SKILL.md`](./SKILL.md) | 主技能：触发条件、SOP 1～14、能力边界、资源索引（**规范依据**） |
 | [`references/`](./references/) | 方法论、人读版式、机器可读格式、**可选** [飞书交付](./references/feishu-delivery.md) |
 | [`assets/domain-model-template.md`](./assets/domain-model-template.md) | 领域模型文档模板 |
 | [`scripts/validate.py`](./scripts/validate.py) | 校验 `*.json` 顶层与必填字段 |
